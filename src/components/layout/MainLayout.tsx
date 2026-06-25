@@ -76,9 +76,7 @@ function Sidebar() {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 h-16 border-b border-slate-100 shrink-0">
-          <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shrink-0 shadow-md">
-            <GraduationCap className="w-5 h-5 text-white" />
-          </div>
+          <img src="/logo.png" className="w-9 h-9 object-contain rounded-lg" alt="Sri Gowthami Logo" />
           {!sidebarCollapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-hidden">
               <h1 className="font-bold text-sm text-slate-800 whitespace-nowrap">Sri Gowthami</h1>

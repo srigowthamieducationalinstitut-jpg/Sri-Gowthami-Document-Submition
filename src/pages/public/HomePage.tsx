@@ -11,9 +11,7 @@ export default function HomePage() {
       <nav className="fixed top-0 inset-x-0 bg-white/80 backdrop-blur-md border-b border-slate-200/60 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
+            <img src="/logo.png" className="w-10 h-10 object-contain rounded-xl" alt="Sri Gowthami Logo" />
             <span className="text-xl font-bold text-slate-800 tracking-tight">Sri Gowthami</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
@@ -128,7 +126,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="bg-slate-900 py-12 text-center text-slate-400">
         <p className="flex items-center justify-center gap-2 mb-4">
-          <GraduationCap className="w-5 h-5" />
+          <img src="/logo.png" className="w-6 h-6 object-contain rounded-full bg-white p-0.5" alt="Sri Gowthami Logo" />
           <span className="font-bold text-white tracking-wide">Sri Gowthami</span>
         </p>
         <p className="text-sm text-slate-500">© 2026 Sri Gowthami Junior College. All rights reserved.</p>

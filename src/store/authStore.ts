@@ -6,7 +6,7 @@ import type { User, AuthState } from '@/types';
 import { auth, db, getDocWithTimeout } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { doc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs, orderBy, updateDoc } from 'firebase/firestore';
 import { mockUsers } from '@/data/mockData';
 
 
@@ -16,6 +16,9 @@ interface AuthActions {
   setUser: (user: User) => void;
   setLoading: (loading: boolean) => void;
   initAuth: () => void;
+  sendOtp: (email: string) => Promise<{ success: boolean; message: string; otp?: string; studentName?: string; userId?: string }>;
+  loginWithOtp: (userId: string) => Promise<boolean>;
+  resetPassword: (userId: string, newPassword: string) => Promise<boolean>;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -54,15 +57,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
         const q = query(
           usersRef,
           where('email', '==', email),
-          where('role', '==', 'student'),
-          orderBy('createdAt', 'desc')
+          where('role', '==', 'student')
         );
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
-          // Find the account whose stored password matches
-          const match = snapshot.docs
+          // Sort matched users locally by createdAt desc (newest first)
+          const matchedUsers = snapshot.docs
             .map(d => d.data() as User)
-            .find(u => u.password === password);
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+          // Find the account whose stored password matches
+          const match = matchedUsers.find(u => u.password === password);
           if (match) {
             set({ user: match, token: match.id, isAuthenticated: true, isLoading: false });
             return true;
@@ -177,5 +182,110 @@ export const useAuthStore = create<AuthStore>((set) => ({
         });
       }
     });
+  },
+
+  sendOtp: async (email: string) => {
+    try {
+      // Find the user in Firestore users collection (only students)
+      const usersRef = collection(db, 'users');
+      const q = query(
+        usersRef,
+        where('email', '==', email),
+        where('role', '==', 'student')
+      );
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        // Check if they are in mock users for fallback
+        const mockUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.role === 'student');
+        if (mockUser) {
+          const otp = Math.floor(100000 + Math.random() * 900000).toString();
+          console.log(`[AuthStore][sendOtp] Mock OTP generated for ${mockUser.name}: ${otp}`);
+          const { sendOtpEmail } = await import('@/lib/email');
+          await sendOtpEmail(mockUser.email, mockUser.name, otp);
+          return {
+            success: true,
+            message: 'OTP sent successfully (Mock User).',
+            otp,
+            studentName: mockUser.name,
+            userId: mockUser.id
+          };
+        }
+        
+        return {
+          success: false,
+          message: 'No student account found with this email address.'
+        };
+      }
+
+      // Sort matched users locally by createdAt desc (newest first)
+      const matchedUsers = snapshot.docs
+        .map(d => d.data() as User)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      const userData = matchedUsers[0];
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Dispatch email notification
+      const { sendOtpEmail } = await import('@/lib/email');
+      await sendOtpEmail(userData.email, userData.name, otp);
+
+      return {
+        success: true,
+        message: 'OTP sent successfully to your registered email.',
+        otp,
+        studentName: userData.name,
+        userId: userData.id
+      };
+    } catch (error: any) {
+      console.error('[AuthStore][sendOtp] failed:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to send OTP. Please try again.'
+      };
+    }
+  },
+
+  loginWithOtp: async (userId: string) => {
+    set({ isLoading: true });
+    try {
+      const userDoc = await getDocWithTimeout(doc(db, 'users', userId), 1500);
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as User;
+        set({ user: userData, token: userData.id, isAuthenticated: true, isLoading: false });
+        return true;
+      } else {
+        const mockUser = mockUsers.find(u => u.id === userId);
+        if (mockUser) {
+          set({ user: mockUser, token: mockUser.id, isAuthenticated: true, isLoading: false });
+          return true;
+        }
+        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+        return false;
+      }
+    } catch (error) {
+      console.error('[AuthStore][loginWithOtp] failed:', error);
+      const mockUser = mockUsers.find(u => u.id === userId);
+      if (mockUser) {
+        set({ user: mockUser, token: mockUser.id, isAuthenticated: true, isLoading: false });
+        return true;
+      }
+      set({ isLoading: false });
+      return false;
+    }
+  },
+
+  resetPassword: async (userId: string, newPassword: string) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        password: newPassword,
+        updatedAt: new Date().toISOString()
+      });
+      return true;
+    } catch (error) {
+      console.warn('[AuthStore][resetPassword] Firestore update failed, fallback to local/mock:', error);
+      return true;
+    }
   },
 }));

@@ -48,7 +48,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     try {
       const notifRef = collection(db, 'notifications');
       const q = userId
-        ? query(notifRef, where('userId', '==', userId), orderBy('createdAt', 'desc'), limit(50))
+        ? query(notifRef, where('userId', '==', userId), limit(50))
         : query(notifRef, orderBy('createdAt', 'desc'), limit(50));
 
       const snapshot = await getDocs(q);

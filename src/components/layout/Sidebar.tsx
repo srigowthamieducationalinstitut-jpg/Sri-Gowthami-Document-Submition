@@ -301,9 +301,7 @@ export function Sidebar() {
         'flex items-center gap-3 border-b border-slate-100 px-5 py-5',
         sidebarCollapsed && 'justify-center px-3'
       )}>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-md shadow-blue-200">
-          <GraduationCap className="h-5 w-5 text-white" />
-        </div>
+        <img src="/logo.png" className="h-9 w-9 shrink-0 object-contain rounded-xl" alt="Sri Gowthami Logo" />
         <AnimatePresence mode="wait">
           {!sidebarCollapsed && (
             <motion.div

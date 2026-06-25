@@ -46,7 +46,7 @@ interface ProfileDrawerProps {
   onClose: () => void
   app: any
   user: any
-  onSaved: (updates: { name: string; phone: string }) => void
+  onSaved: (updates: { name: string; phone: string; email: string }) => void
 }
 
 function ProfileDrawer({ open, onClose, app, user, onSaved }: ProfileDrawerProps) {
@@ -56,6 +56,7 @@ function ProfileDrawer({ open, onClose, app, user, onSaved }: ProfileDrawerProps
   const [form, setForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
+    email: user?.email || '',
     dob: app?.personalDetails?.dateOfBirth || '',
     gender: app?.personalDetails?.gender || 'male',
     fatherName: app?.personalDetails?.fatherName || '',
@@ -78,6 +79,7 @@ function ProfileDrawer({ open, onClose, app, user, onSaved }: ProfileDrawerProps
       setForm({
         name: user?.name || '',
         phone: user?.phone || '',
+        email: user?.email || '',
         dob: app?.personalDetails?.dateOfBirth || '',
         gender: app?.personalDetails?.gender || 'male',
         fatherName: app?.personalDetails?.fatherName || '',
@@ -101,6 +103,8 @@ function ProfileDrawer({ open, onClose, app, user, onSaved }: ProfileDrawerProps
     setError('')
     if (!form.name.trim()) { setError('Name cannot be empty.'); return }
     if (!/^[0-9+\s-]{10,15}$/.test(form.phone.trim())) { setError('Enter a valid phone number.'); return }
+    if (!form.email.trim()) { setError('Email cannot be empty.'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) { setError('Please enter a valid email address.'); return }
     if (form.pincode && !/^\d{6}$/.test(form.pincode)) { setError('Pincode must be 6 digits.'); return }
 
     setSaving(true)
@@ -110,6 +114,7 @@ function ProfileDrawer({ open, onClose, app, user, onSaved }: ProfileDrawerProps
         await updateDoc(doc(db, 'users', user.id), {
           name: form.name.trim(),
           phone: form.phone.trim(),
+          email: form.email.trim(),
           updatedAt: new Date().toISOString(),
         })
       }
@@ -118,10 +123,12 @@ function ProfileDrawer({ open, onClose, app, user, onSaved }: ProfileDrawerProps
         await updateDoc(doc(db, 'applications', app.id), {
           studentName: form.name.trim(),
           studentPhone: form.phone.trim(),
+          studentEmail: form.email.trim(),
           personalDetails: {
             ...(app.personalDetails || {}),
             fullName: form.name.trim(),
             phone: form.phone.trim(),
+            email: form.email.trim(),
             dateOfBirth: form.dob,
             gender: form.gender,
             fatherName: form.fatherName,
@@ -140,13 +147,13 @@ function ProfileDrawer({ open, onClose, app, user, onSaved }: ProfileDrawerProps
           updatedAt: new Date().toISOString(),
         })
       }
-      onSaved({ name: form.name.trim(), phone: form.phone.trim() })
+      onSaved({ name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim() })
       setSaved(true)
       setTimeout(onClose, 1200)
     } catch (e: any) {
       console.error('Profile save failed:', e)
       setError('Save failed. Changes saved locally only.')
-      onSaved({ name: form.name.trim(), phone: form.phone.trim() })
+      onSaved({ name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim() })
       setSaved(true)
       setTimeout(onClose, 1400)
     } finally {
@@ -236,6 +243,13 @@ function ProfileDrawer({ open, onClose, app, user, onSaved }: ProfileDrawerProps
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input value={form.phone} onChange={e => set('phone', e.target.value)} className={inputCls} placeholder="+91 XXXXX XXXXX" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inputCls} placeholder="Your email address" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -527,10 +541,10 @@ export default function StudentPortalPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const handleProfileSaved = ({ name, phone }: { name: string; phone: string }) => {
+  const handleProfileSaved = ({ name, phone, email }: { name: string; phone: string; email: string }) => {
     setDisplayName(name)
     if (user) {
-      setUser({ ...user, name, phone })
+      setUser({ ...user, name, phone, email })
     }
   }
 
@@ -622,9 +636,7 @@ export default function StudentPortalPage() {
       <header className="bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
         {/* Left: Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20">
-            <GraduationCap className="w-6 h-6 text-white" />
-          </div>
+          <img src="/logo.png" className="w-10 h-10 object-contain rounded-xl" alt="Sri Gowthami Logo" />
           <div>
             <h1 className="font-bold text-slate-800 leading-tight">Sri Gowthami</h1>
             <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Admissions Portal</p>

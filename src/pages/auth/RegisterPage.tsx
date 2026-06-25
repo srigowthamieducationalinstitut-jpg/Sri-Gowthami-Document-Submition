@@ -258,8 +258,8 @@ export default function RegisterPage() {
         <motion.div animate={{ y: [10, -20, 10] }} transition={{ duration: 14, repeat: Infinity }} className="absolute bottom-40 left-16 w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm" />
 
         <div className="relative z-10 flex flex-col justify-center px-16 text-white">
-          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-8">
-            <GraduationCap className="w-9 h-9" />
+          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-8 p-1.5 shadow-md">
+            <img src="/logo.png" className="w-full h-full object-contain" alt="Sri Gowthami Logo" />
           </div>
           <h1 className="text-4xl font-bold leading-tight mb-4">Join Sri Gowthami</h1>
           <p className="text-lg text-white/80 leading-relaxed max-w-md">
@@ -303,9 +303,7 @@ export default function RegisterPage() {
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-lg py-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
+            <img src="/logo.png" className="w-10 h-10 object-contain rounded-xl" alt="Sri Gowthami Logo" />
             <h1 className="font-bold text-slate-800">Student Registration</h1>
           </div>
 
