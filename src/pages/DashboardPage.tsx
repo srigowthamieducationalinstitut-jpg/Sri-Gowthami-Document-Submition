@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'motion/react'
-import { FileText, ShieldCheck, Clock, XCircle, CalendarDays, TrendingUp, ArrowUpRight, ArrowDownRight, Activity, ChevronRight, CheckCircle2, AlertCircle, User, FolderOpen } from 'lucide-react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, RadialBarChart, RadialBar, Legend } from 'recharts'
+import { FileText, ShieldCheck, Clock, XCircle, CalendarDays, TrendingUp, ArrowUpRight, ArrowDownRight, FolderOpen } from 'lucide-react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts'
 import { useAuthStore } from '@/store/authStore'
 import { useApplicationStore } from '@/store/applicationStore'
 import { useDocumentStore } from '@/store/documentStore'
-import { admissionTrendData, departmentWiseData, verificationProgressData, recentActivities } from '@/data/mockData'
-import { cn, formatRelativeTime, getInitials } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 // Animated counter hook
@@ -73,14 +72,6 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 
 const PIE_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#f43f5e']
 
-const tasks = [
-  { title: 'Review B.Tech CSE applications', count: 12, priority: 'high', due: 'Due today' },
-  { title: 'Verify transfer certificates batch', count: 8, priority: 'medium', due: 'Due tomorrow' },
-  { title: 'Send admission letters', count: 15, priority: 'high', due: 'Due today' },
-  { title: 'Monthly admission report', count: 1, priority: 'low', due: 'Due in 3 days' },
-  { title: 'Update course fee structure', count: 0, priority: 'medium', due: 'Due in 5 days' },
-]
-
 export default function DashboardPage() {
   const { user } = useAuthStore()
   const { applications, fetchApplications, isLoading: appsLoading } = useApplicationStore()
@@ -109,6 +100,66 @@ export default function DashboardPage() {
     const now = new Date();
     return appDate.getMonth() === now.getMonth() && appDate.getFullYear() === now.getFullYear();
   }).length
+
+  const liveAdmissionTrendData = useMemo(() => {
+    const result = []
+    const now = new Date()
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthLabel = d.toLocaleString('en-US', { month: 'short' })
+      const monthIndex = d.getMonth()
+      const year = d.getFullYear()
+      const count = applications.filter(a => {
+        const appDate = new Date(a.createdAt)
+        return appDate.getMonth() === monthIndex && appDate.getFullYear() === year
+      }).length
+      result.push({ name: monthLabel, value: count })
+    }
+    return result
+  }, [applications])
+
+  const admissionTrendPercent = useMemo(() => {
+    const now = new Date()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
+    const prevMonthDate = new Date(currentYear, currentMonth - 1, 1)
+    const prevMonth = prevMonthDate.getMonth()
+    const prevMonthYear = prevMonthDate.getFullYear()
+    
+    const currentMonthCount = applications.filter(a => {
+      const appDate = new Date(a.createdAt)
+      return appDate.getMonth() === currentMonth && appDate.getFullYear() === currentYear
+    }).length
+    const prevMonthCount = applications.filter(a => {
+      const appDate = new Date(a.createdAt)
+      return appDate.getMonth() === prevMonth && appDate.getFullYear() === prevMonthYear
+    }).length
+
+    if (prevMonthCount === 0) {
+      return currentMonthCount > 0 ? '+100%' : '0%'
+    }
+    const change = ((currentMonthCount - prevMonthCount) / prevMonthCount) * 100
+    const sign = change >= 0 ? '+' : ''
+    return `${sign}${change.toFixed(1)}%`
+  }, [applications])
+
+  const isTrendPositive = !admissionTrendPercent.startsWith('-') && admissionTrendPercent !== '0%'
+
+  const liveDepartmentWiseData = useMemo(() => {
+    const defaultCourses = [
+      { name: 'B.Tech CSE', color: '#3B82F6' },
+      { name: 'B.Tech ECE', color: '#60A5FA' },
+      { name: 'B.Tech ME', color: '#93C5FD' },
+      { name: 'B.Tech CE', color: '#BFDBFE' },
+      { name: 'MBA', color: '#10B981' },
+      { name: 'MCA', color: '#34D399' },
+      { name: 'B.Pharm', color: '#F59E0B' },
+    ]
+    return defaultCourses.map(course => {
+      const count = applications.filter(a => a.courseName === course.name || a.academicDetails?.courseApplied === course.name).length
+      return { name: course.name, value: count, fill: course.color }
+    })
+  }, [applications])
 
   const dynamicStatusData = [
     { name: 'Submitted', value: applications.filter(a => a.status === 'submitted').length, color: '#3B82F6' },
@@ -163,19 +214,23 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Admission Trend */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm"
+          className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm lg:col-span-2"
         >
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="font-semibold text-slate-800">Admission Trend</h3>
               <p className="text-xs text-slate-400 mt-0.5">Monthly applications over 12 months</p>
             </div>
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 rounded-lg text-xs font-medium text-emerald-600">
-              <ArrowUpRight className="w-3 h-3" /> 12.5%
+            <div className={cn(
+              "flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium",
+              isTrendPositive ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+            )}>
+              {isTrendPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {admissionTrendPercent}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={admissionTrendData}>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={liveAdmissionTrendData}>
               <defs>
                 <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
@@ -237,7 +292,7 @@ export default function DashboardPage() {
             <p className="text-xs text-slate-400 mt-0.5">Application count by department</p>
           </div>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={departmentWiseData} layout="vertical" barCategoryGap="20%">
+            <BarChart data={liveDepartmentWiseData} layout="vertical" barCategoryGap="20%">
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
               <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={80} />
@@ -245,113 +300,6 @@ export default function DashboardPage() {
               <Bar dataKey="value" fill="#3b82f6" radius={[0, 6, 6, 0]} barSize={20} />
             </BarChart>
           </ResponsiveContainer>
-        </motion.div>
-
-        {/* Verification Progress */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-          className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm"
-        >
-          <div className="mb-6">
-            <h3 className="font-semibold text-slate-800">Verification Progress</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Document verification completion rates</p>
-          </div>
-          <ResponsiveContainer width="100%" height={240}>
-            <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={verificationProgressData} startAngle={180} endAngle={0}>
-              <RadialBar dataKey="value" cornerRadius={8} background={{ fill: '#f1f5f9' }} />
-              <Legend
-                verticalAlign="bottom"
-                iconType="circle"
-                iconSize={8}
-                formatter={(value: string) => <span className="text-xs text-slate-600 ml-1">{value}</span>}
-              />
-              <Tooltip />
-            </RadialBarChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </div>
-
-      {/* Bottom Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
-          className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm"
-        >
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary-500" /> Recent Activity
-            </h3>
-            <button className="text-xs text-primary-500 font-medium hover:underline flex items-center gap-1">
-              View All <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="space-y-1">
-            {recentActivities.slice(0, 6).map((activity, i) => (
-              <motion.div
-                key={activity.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.8 + i * 0.05 }}
-                className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors"
-              >
-                <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-0.5',
-                  activity.action === 'created' || activity.action === 'uploaded' ? 'bg-primary-100 text-primary-600' :
-                  activity.action === 'approved' ? 'bg-emerald-100 text-emerald-600' :
-                  activity.action === 'rejected' ? 'bg-rose-100 text-rose-600' :
-                  'bg-amber-100 text-amber-600'
-                )}>
-                  {activity.action === 'created' || activity.action === 'uploaded' ? <FileText className="w-3.5 h-3.5" /> :
-                   activity.action === 'approved' ? <CheckCircle2 className="w-3.5 h-3.5" /> :
-                   activity.action === 'rejected' ? <XCircle className="w-3.5 h-3.5" /> :
-                   <AlertCircle className="w-3.5 h-3.5" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-700">
-                    <span className="font-medium">{activity.user}</span>{' '}
-                    <span className="text-slate-500">{activity.action}</span>
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{formatRelativeTime(activity.timestamp)}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Upcoming Tasks */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
-          className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm"
-        >
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-amber-500" /> Upcoming Tasks
-            </h3>
-            <span className="text-xs text-slate-400 font-medium">{tasks.length} tasks</span>
-          </div>
-          <div className="space-y-2">
-            {tasks.map((task, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.9 + i * 0.05 }}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group"
-              >
-                <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-primary-500 focus:ring-primary-500 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-700 group-hover:text-slate-900">{task.title}
-                    {task.count > 0 && <span className="text-slate-400"> ({task.count})</span>}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{task.due}</p>
-                </div>
-                <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide',
-                  task.priority === 'high' ? 'bg-rose-50 text-rose-500' :
-                  task.priority === 'medium' ? 'bg-amber-50 text-amber-500' :
-                  'bg-slate-50 text-slate-400'
-                )}>
-                  {task.priority}
-                </span>
-              </motion.div>
-            ))}
-          </div>
         </motion.div>
       </div>
     </div>
