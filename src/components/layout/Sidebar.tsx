@@ -108,13 +108,7 @@ const navItems: NavItem[] = [
     roles: ['super_admin', 'admission_officer'],
     section: 'main',
   },
-  {
-    label: 'AI Assistant',
-    icon: Bot,
-    path: '/ai-assistant',
-    roles: 'all',
-    section: 'system',
-  },
+
   {
     label: 'Admin',
     icon: Settings,

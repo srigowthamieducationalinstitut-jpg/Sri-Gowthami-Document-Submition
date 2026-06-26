@@ -34,7 +34,7 @@ const routeLabels: Record<string, string> = {
   'application-status': 'Application Status',
   notifications: 'Notifications',
   reports: 'Reports',
-  'ai-assistant': 'AI Assistant',
+
   admin: 'Admin',
   settings: 'Settings',
   profile: 'Profile',

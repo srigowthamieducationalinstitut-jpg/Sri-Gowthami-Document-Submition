@@ -131,8 +131,6 @@ export default function App() {
             </RoleProtectedRoute>
           } />
 
-          {/* AI Assistant — all roles */}
-          <Route path="ai-assistant" element={<DashboardPage />} />
         </Route>
 
         {/* Catch all */}

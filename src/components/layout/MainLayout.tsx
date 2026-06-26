@@ -36,7 +36,6 @@ const navItems: NavItem[] = [
   { label: 'Application Status', icon: ClipboardList, path: '/application-status', roles: ['parent'] },
   { label: 'Notifications', icon: Bell, path: '/notifications', roles: allRoles },
   { label: 'Reports', icon: BarChart3, path: '/reports', roles: ['super_admin', 'admission_officer'] },
-  { label: 'AI Assistant', icon: Bot, path: '/ai-assistant', roles: allRoles },
   { label: 'Admin', icon: Settings, path: '/admin', roles: ['super_admin'] },
 ]
 
@@ -176,7 +175,6 @@ function Header() {
     '/admin': 'Administration',
     '/my-application': 'My Application',
     '/my-documents': 'My Documents',
-    '/ai-assistant': 'AI Assistant',
     '/application-status': 'Application Status',
   }
   const currentTitle = pathMap[location.pathname] || 'Dashboard'
