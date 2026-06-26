@@ -513,22 +513,39 @@ export default function StudentPortalPage() {
       const reader = new FileReader()
       reader.onloadend = () => {
         const base64Data = reader.result as string
-        setTimeout(() => {
+        setTimeout(async () => {
           const existingDoc = localDocs.find(d => d.type === targetType)
           if (existingDoc) {
-            updateDocument(existingDoc.id, {
+            await updateDocument(existingDoc.id, {
               fileUrl: base64Data, fileName: file.name, fileSize: file.size,
               mimeType: file.type || 'application/pdf',
               uploadedAt: new Date().toISOString(), status: 'pending',
             })
           } else {
-            addDocument({
+            await addDocument({
               id: `doc_new_${Date.now()}`, applicationId: app.id, studentName: app.studentName,
               type: targetType as any, fileName: file.name, fileUrl: base64Data,
               fileSize: file.size, mimeType: file.type || 'application/pdf',
               comments: [], uploadedAt: new Date().toISOString(), status: 'pending',
             })
           }
+
+          // Trigger live notification for admin/officers
+          try {
+            const { useNotificationStore } = await import('@/store/notificationStore');
+            const docTypeLabel = targetType ? targetType.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) : 'Document';
+            useNotificationStore.getState().addNotification({
+              userId: 'admin',
+              type: 'warning',
+              channel: 'in_app',
+              title: existingDoc ? 'Document Resubmitted' : 'Document Submitted',
+              message: `${app.studentName} ${existingDoc ? 'resubmitted' : 'submitted'} their ${docTypeLabel} document.`,
+              link: `/applications/${app.id}`,
+            });
+          } catch (err) {
+            console.warn('Failed to trigger notification:', err);
+          }
+
           setUploadingType(null)
           uploadTargetRef.current = null
         }, 1200)

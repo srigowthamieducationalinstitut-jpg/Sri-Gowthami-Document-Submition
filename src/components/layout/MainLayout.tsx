@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import {
@@ -287,7 +287,19 @@ function Header() {
 // =============================================
 export function MainLayout() {
   const { sidebarCollapsed } = useUIStore()
+  const { user } = useAuthStore()
+  const { fetchNotifications } = useNotificationStore()
   const location = useLocation()
+
+  useEffect(() => {
+    if (user) {
+      const targetUserId = user.role === 'student' ? user.id : 'admin';
+      const unsubscribe = fetchNotifications(targetUserId);
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }
+  }, [user, fetchNotifications]);
 
   return (
     <div className="min-h-screen bg-slate-50/50 gradient-mesh">

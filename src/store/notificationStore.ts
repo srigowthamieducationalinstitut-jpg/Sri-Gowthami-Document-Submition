@@ -1,23 +1,23 @@
-// ============================================
-// Notification Store — Zustand v5 (Firestore)
-// ============================================
 import { create } from 'zustand';
 import type { Notification } from '@/types';
 import { db } from '@/lib/firebase';
 import {
-  collection, doc, setDoc, updateDoc, getDocs,
+  collection, doc, setDoc, updateDoc,
   query, where, writeBatch, orderBy, limit,
+  onSnapshot,
 } from 'firebase/firestore';
+import type { Unsubscribe } from 'firebase/firestore';
 import { mockNotifications } from '@/data/mockData';
 
 interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
+  _unsubscribe: Unsubscribe | null;
 }
 
 interface NotificationActions {
-  fetchNotifications: (userId?: string) => Promise<void>;
+  fetchNotifications: (userId?: string) => (() => void) | void;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => void;
@@ -40,10 +40,17 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   notifications: [],
   unreadCount: 0,
   isLoading: false,
+  _unsubscribe: null,
 
   // --- Actions ---
-  fetchNotifications: async (userId?: string) => {
+  fetchNotifications: (userId?: string) => {
     set({ isLoading: true });
+
+    // Clean up old listener if active
+    const oldUnsub = get()._unsubscribe;
+    if (oldUnsub) {
+      oldUnsub();
+    }
 
     try {
       const notifRef = collection(db, 'notifications');
@@ -51,23 +58,48 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         ? query(notifRef, where('userId', '==', userId), limit(50))
         : query(notifRef, orderBy('createdAt', 'desc'), limit(50));
 
-      const snapshot = await getDocs(q);
-      const notifications = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as object),
-      })) as Notification[];
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const notifications = snapshot.docs.map((d) => ({
+            id: d.id,
+            ...(d.data() as object),
+          })) as Notification[];
 
-      // Sort newest first
-      const sorted = notifications.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          const sorted = notifications.sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+
+          set({
+            notifications: sorted,
+            unreadCount: computeUnreadCount(sorted),
+            isLoading: false,
+          });
+        },
+        (error) => {
+          console.error('[NotificationStore][fetchNotifications] onSnapshot error:', error);
+          
+          // Fallback to mock data
+          const notifications = userId
+            ? mockNotifications.filter((n) => n.userId === userId)
+            : [...mockNotifications];
+
+          const sorted = notifications.sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+
+          set({
+            notifications: sorted,
+            unreadCount: computeUnreadCount(sorted),
+            isLoading: false,
+          });
+        }
       );
 
-      set({
-        notifications: sorted,
-        unreadCount: computeUnreadCount(sorted),
-      });
+      set({ _unsubscribe: unsubscribe });
+      return unsubscribe;
     } catch (error) {
-      console.error('[NotificationStore][fetchNotifications] failed:', error);
+      console.error('[NotificationStore][fetchNotifications] subscription setup failed:', error);
 
       // Fallback to mock data
       const notifications = userId
@@ -81,9 +113,8 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
       set({
         notifications: sorted,
         unreadCount: computeUnreadCount(sorted),
+        isLoading: false,
       });
-    } finally {
-      set({ isLoading: false });
     }
   },
 

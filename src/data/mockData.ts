@@ -303,53 +303,7 @@ export const mockApplications: Application[] = [
 // --- Sample Documents ---
 export const mockDocuments: Document[] = [];
 
-// --- Sample Notifications ---
-export const mockNotifications: Notification[] = [
-  {
-    id: 'ntf_001',
-    userId: 'usr_001',
-    type: 'success',
-    channel: 'in_app',
-    title: 'Application Approved',
-    message: 'Application SGI-2026-1247 for Ananya Patel has been approved.',
-    link: '/applications/app_001',
-    read: false,
-    createdAt: '2026-06-15T04:15:00Z',
-  },
-  {
-    id: 'ntf_002',
-    userId: 'usr_001',
-    type: 'warning',
-    channel: 'in_app',
-    title: 'Pending Documents',
-    message: '12 documents are awaiting verification for more than 48 hours.',
-    link: '/documents?status=pending',
-    read: false,
-    createdAt: '2026-06-15T03:00:00Z',
-  },
-  {
-    id: 'ntf_003',
-    userId: 'usr_001',
-    type: 'info',
-    channel: 'in_app',
-    title: 'New Submissions',
-    message: '28 new applications were submitted today.',
-    link: '/applications?filter=today',
-    read: true,
-    createdAt: '2026-06-14T18:00:00Z',
-  },
-  {
-    id: 'ntf_004',
-    userId: 'usr_001',
-    type: 'error',
-    channel: 'in_app',
-    title: 'Application Rejected',
-    message: 'Application SGI-2026-1198 has been rejected due to incomplete documents.',
-    link: '/applications/app_rejected_001',
-    read: true,
-    createdAt: '2026-06-14T15:30:00Z',
-  },
-];
+export const mockNotifications: Notification[] = [];
 
 // --- Activity Logs ---
 export const mockActivityLogs: ActivityLog[] = [

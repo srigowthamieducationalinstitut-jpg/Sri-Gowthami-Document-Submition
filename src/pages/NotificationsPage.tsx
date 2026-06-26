@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { motion } from 'motion/react'
 import { Bell, Check, CheckCheck, Info, CheckCircle2, AlertTriangle, AlertCircle, Trash2 } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
-import { mockNotifications } from '@/data/mockData'
+import { useNotificationStore } from '@/store/notificationStore'
 import type { NotificationType } from '@/types'
 
 const filterTabs: { label: string; value: string }[] = [
@@ -16,21 +16,17 @@ const filterTabs: { label: string; value: string }[] = [
 
 export default function NotificationsPage() {
   const [activeFilter, setActiveFilter] = useState('')
-  const [readIds, setReadIds] = useState<string[]>(
-    mockNotifications.filter(n => n.read).map(n => n.id)
-  )
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationStore()
 
   const filtered = useMemo(() => {
-    let items = [...mockNotifications]
-    if (activeFilter === 'unread') items = items.filter(n => !readIds.includes(n.id))
+    let items = [...notifications]
+    if (activeFilter === 'unread') items = items.filter(n => !n.read)
     else if (activeFilter) items = items.filter(n => n.type === activeFilter)
     return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  }, [activeFilter, readIds])
+  }, [activeFilter, notifications])
 
-  const unreadCount = mockNotifications.filter(n => !readIds.includes(n.id)).length
-
-  const markAllRead = () => setReadIds(mockNotifications.map(n => n.id))
-  const toggleRead = (id: string) => setReadIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  const markAllRead = () => markAllAsRead()
+  const toggleRead = (id: string) => markAsRead(id)
 
   const getIcon = (type: NotificationType) => {
     switch (type) {
@@ -83,7 +79,7 @@ export default function NotificationsPage() {
       {/* Notification List */}
       <div className="space-y-2">
         {filtered.map((notif, i) => {
-          const isRead = readIds.includes(notif.id)
+          const isRead = notif.read
           const Icon = getIcon(notif.type)
           return (
             <motion.div

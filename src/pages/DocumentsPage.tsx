@@ -351,7 +351,7 @@ export default function DocumentsPage() {
                           return;
                         }
                         const reader = new FileReader();
-                        reader.onloadend = () => {
+                        reader.onloadend = async () => {
                           const base64Data = reader.result as string;
                           updateDocument(selectedDoc.id, {
                             fileUrl: base64Data,
@@ -361,6 +361,23 @@ export default function DocumentsPage() {
                             status: 'pending',
                             uploadedAt: new Date().toISOString()
                           });
+
+                          // Trigger live notification for admin/officers
+                          try {
+                            const { useNotificationStore } = await import('@/store/notificationStore');
+                            const docTypeLabel = selectedDoc.type ? selectedDoc.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 'Document';
+                            useNotificationStore.getState().addNotification({
+                              userId: 'admin',
+                              type: 'warning',
+                              channel: 'in_app',
+                              title: 'Document Resubmitted',
+                              message: `${selectedDoc.studentName} resubmitted their ${docTypeLabel} document.`,
+                              link: `/applications/${selectedDoc.applicationId}`,
+                            });
+                          } catch (err) {
+                            console.warn('Failed to trigger notification:', err);
+                          }
+
                           setSelectedDoc(null);
                         };
                         reader.readAsDataURL(file);
