@@ -170,8 +170,8 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => ({
 
     // Trigger EmailJS email notification for application status change
     try {
-      const updatedApp = get().applications.find((app) => app.id === id);
-      if (updatedApp && (status === 'approved' || status === 'rejected')) {
+      const updatedApp = get().applications.find((app) => app.id === id) || get().selectedApplication;
+      if (updatedApp && updatedApp.id === id && updatedApp.studentEmail && (status === 'approved' || status === 'rejected')) {
         const { sendStatusEmail } = await import('@/lib/email');
         await sendStatusEmail(
           updatedApp.studentEmail,

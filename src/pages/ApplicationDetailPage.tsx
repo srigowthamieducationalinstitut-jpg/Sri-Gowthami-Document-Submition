@@ -83,22 +83,17 @@ export default function ApplicationDetailPage() {
 
   const handleApproveAll = async () => {
     if (!app) return
-    const now = new Date().toISOString()
     const unverifiedDocs = docs.filter(d => d.status !== 'verified')
     
     try {
-      const { doc, updateDoc } = await import('firebase/firestore')
-      const { db } = await import('@/lib/firebase')
-      
-      for (const d of unverifiedDocs) {
-        await updateDoc(doc(db, 'documents', d.id), {
-          status: 'verified',
-          verifiedAt: now,
-          verifiedBy: user?.name || 'Admission Officer'
-        })
-      }
+      // Use updateDocumentStatus to ensure notifications and email actions are triggered for each document
+      await Promise.all(
+        unverifiedDocs.map(d =>
+          updateDocumentStatus(d.id, 'verified', user?.name || 'Admission Officer')
+        )
+      );
     } catch (err) {
-      console.error('Failed to verify all documents quietly in database:', err)
+      console.error('Failed to verify all documents in database:', err)
     }
     
     await updateStatus(app.id, 'approved')
